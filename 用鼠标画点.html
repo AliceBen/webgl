@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <!-- 顶点着色器 -->
+  <!-- attribute 存储限定符，向外部导出点位相关的对象，类似export -->
+  <!-- vec4 变量类型 4维矢量对象 -->
+  <script id="vertexShader" type="x-shader/x-vertext">
+    attribute vec4 a_Position;
+    void main () {
+      gl_Position = a_Position;
+      gl_PointSize = 50.0;
+    }
+  </script>
+  <!-- 片元着色器 -->
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    void main () {
+      gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+    }
+  </script>
+  <script type="module">
+    import { initShaders } from './jsm/Utils.js';
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const gl = canvas.getContext('webgl');
+
+    const vsSource = document.getElementById('vertexShader').innerText;
+    const fsSource = document.getElementById('fragmentShader').innerText;
+
+    initShaders(gl, vsSource, fsSource);
+    const a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const g_points = [];
+    canvas.addEventListener('click', function(event) {
+
+      // 获取鼠标在canvas 画布中的css 位置
+      const { clientX, clientY } = event;
+      const { left, top, width, height } = canvas.getBoundingClientRect(); // 元素相对于视口的位置
+      const [ cssX, cssY ] = [clientX - left, clientY - top];
+
+      // canvas坐标系转webgl坐标系
+      const [ halfWidth, halfHeight ] = [width / 2, height / 2]; // canvas 画布中心位置
+      const [ xBaseCenter, yBaseCenter ] = [cssX - halfWidth, cssY - halfHeight];
+
+      // 解决y 方向的差异
+      const yBaseCenterTop = -yBaseCenter;
+      // 解决「坐标基底」的差异   canvas 2D 坐标基底是左上角，webgl 是中心
+      const [ x, y ] = [xBaseCenter / halfWidth, yBaseCenterTop / halfHeight];
+      g_points.push({ x, y });
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      g_points.forEach(({ x, y }) => {
+        gl.vertexAttrib2f(a_Position, x, y);
+        gl.drawArrays(gl.POINTS, 0, 1);
+      })
+    })
+  </script>
+</body>
+</html>

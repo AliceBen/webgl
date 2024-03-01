@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <!-- 顶点着色器 -->
+  <script id="vertexShader" type="x-shader/x-vertex">
+    void main () {
+      gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+      gl_PointSize = 100.0;
+    }
+  </script>
+  <!-- 片元着色器 -->
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    void main () {
+      gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+    }
+  </script>
+  <script>
+    // import {initShaders} from '../jsm/Utils.js';
+    // canvas 画布
+    const canvas = document.getElementById('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // 获取 webgl 上下文
+    const gl = canvas.getContext('webgl');
+    // 顶点着色器 - 位置、颜色
+    const vsSource = document.getElementById('vertexShader').innerText;
+    // 片元着色器 - 光照
+    const fsSource = document.getElementById('fragmentShader').innerHTML;
+    // 初始化着色器
+    initShader(gl, vsSource, fsSource);
+    // 指定清空 canvas 的颜色
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // 清理 canvas
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    // 绘制点
+    gl.drawArrays(gl.OPINTS, 0, 1)
+
+    function initShader (gl, vsSource, fsSource) {
+      // 创建程序对象
+      const program = gl.createProgram();
+      // 创建着色器对象
+      const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+      // 将顶点着色器对象挂载到程序对象上
+      gl.attachShader(program, vertexShader);
+      // 将片元着色器对象挂载到程序对象上
+      gl.attachShader(program, fragmentShader);
+      // 链接程序对象
+      gl.linkProgram(program);
+      // 启动程序对象
+      gl.useProgram(program);
+      // 将程序对象挂载到 gl 上
+      gl.program = program;
+      return true;
+    }
+    
+    function loadShader(gl, type, source) {
+      // 根据着色器类型创建着色器对象
+      const shader = gl.createShader(type);
+      // 将着色器源码写入着色器对象
+      gl.shaderSource(shader, source);
+      // 编译着色器
+      gl.compileShader(shader);
+      // 返回着色器对象
+      return shader;
+    }
+  </script>
+  <script id="vertexShader" type="x-shader/x-vertex">
+    attribute vec4 a_Position;
+    void main () {
+      gl_Position = a_Position
+      gl_PointSize = 50.0;
+      const a_Position = gl.getAttribLocation(gl.program, 'a_Position');  <!-- 获取attribute -->
+      gl.vertexAttrib3f(a_Position, 0.0, 0.5, 0.0); <!-- 修改attribute -->
+    }
+  </script>
+</body>
+</html>

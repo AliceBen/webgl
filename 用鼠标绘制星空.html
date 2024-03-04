@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>绘制星空</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #canvas {
+      background: url("./images/sky.jpg");
+      background-size: cover;
+      background-position: right bottom;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <!-- 顶点着色器 -->
+  <script id="vertexShader" type="x-shader/x-vertex">
+      attribute vec4 a_Position;
+      attribute float a_PointSize;
+      void main(){
+          //点位
+          gl_Position=a_Position;
+          //尺寸
+          gl_PointSize=a_PointSize;
+      }
+    </script>
+  <!-- 片元着色器 -->
+  <script id="fragmentShader" type="x-shader/x-fragment">
+      precision mediump float;
+      uniform vec4 u_FragColor;
+      void main(){
+        float dist=distance(gl_PointCoord,vec2(0.5,0.5));
+        if(dist<0.5){
+          gl_FragColor=u_FragColor;
+        }else{
+          discard;
+        }
+      }
+    </script>
+  <script type="module">
+    import { initShaders } from "./jsm/Utils.js";
+
+    const canvas = document.querySelector("#canvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // 获取着色器文本
+    const vsSource = document.querySelector("#vertexShader").innerText;
+    const fsSource = document.querySelector("#fragmentShader").innerText;
+
+    //三维画笔
+    const gl = canvas.getContext("webgl");
+    // gl.enable 对上下文开启某种特性
+    // gl.BLEND 激活片元的颜色融合计算
+    gl.enable(gl.BLEND); // 开启片元颜色的合成功能
+    // 定义用户混合像素算法的函数 参数1：为源混合因子指定一个乘数 参数2：为源目标合因子指定一个乘数
+    // gl.SRC_ALPHA 将所有颜色乘以源 alpha[透明度]值
+    // gl.ONE_MINUS_SRC_ALPHA 将所有颜色乘以1减去源alpha值
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // 设置片元的合成方式
+
+    //初始化着色器
+    initShaders(gl, vsSource, fsSource);
+
+    //设置attribute 变量
+    const a_Position = gl.getAttribLocation(gl.program, "a_Position");
+    const a_PointSize = gl.getAttribLocation(gl.program, "a_PointSize");
+    const u_FragColor = gl.getUniformLocation(gl.program, "u_FragColor");
+
+    const stars = [];
+
+    //声明颜色 rgba
+    gl.clearColor(0, 0, 0, 1);
+    //刷底色
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    //绘制顶点
+    render();
+
+    // 渲染方法
+    function render() {
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      stars.forEach(({ x, y, s, a }) => {
+        gl.vertexAttrib2f(a_Position, x, y);
+        gl.vertexAttrib1f(a_PointSize, s);
+        // 图形的透明度作为变量
+        const arr = new Float32Array([0.87, 0.91, 1, a]);
+        gl.uniform4fv(u_FragColor, arr);
+
+        gl.drawArrays(gl.POINTS, 0, 1);
+      });
+    }
+
+    // 鼠标点击事件
+    canvas.addEventListener("click", ({ clientX, clientY }) => {
+      console.log(clientX, clientY);
+      const { left, top, width, height } = canvas.getBoundingClientRect();
+      const [cssX, cssY] = [clientX - left, clientY - top];
+
+      //解决坐标原点位置的差异
+      const [halfWidth, halfHeight] = [width / 2, height / 2];
+      const [xBaseCenter, yBaseCenter] = [
+        cssX - halfWidth,
+        cssY - halfHeight,
+      ];
+      // 解决y 方向的差异
+      const yBaseCenterTop = -yBaseCenter;
+      //解决坐标基底的差异
+      const [x, y] = [xBaseCenter / halfWidth, yBaseCenterTop / halfHeight];
+
+      const s = Math.random() * 5 + 2;
+      const a = Math.random();
+      stars.push({ x, y, s, a });
+      render();
+    });
+
+  </script>
+</body>
+
+</html>

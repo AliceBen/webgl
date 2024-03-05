@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>星星向你眨眼睛</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #canvas {
+      background: url("./images/sky.jpg");
+      background-size: cover;
+      background-position: right bottom;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script id="vertexShader" type="x-shader/x-vertex">
+    attribute vec4 a_Position;
+    attribute float a_PointSize;
+    void main() {
+      gl_Position = a_Position;
+      gl_PointSize = a_PointSize;
+    }
+  </script>
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 u_FragColor;
+    void main () {
+      float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
+      if (dist < 0.5) {
+        gl_FragColor = u_FragColor;
+      } else {
+        discard;
+      }
+    }
+  </script>
+  <script type="module">
+    import { initShaders } from './jsm/Utils.js';
+    import Compose from './jsm/Compose.js';
+    import Track from './jsm/Track.js';
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const vsSource = document.getElementById('vertexShader').innerText;
+    const fsSource = document.getElementById('fragmentShader').innerText;
+
+    const gl = canvas.getContext('webgl');
+    gl.enable(gl.BLEND); // 开启片元颜色的合成功能
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // 设置片元颜色的合成方式
+
+    initShaders(gl, vsSource, fsSource);
+
+    const a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+    const a_PointSize = gl.getAttribLocation(gl.program, 'a_PointSize');
+    const u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
+    
+    const stars = [];
+
+    // 合成对象
+    const compose = new Compose();
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    render()
+
+    canvas.addEventListener('click', ({ clientX, clientY }) => {
+      const { left, top, width, height } = canvas.getBoundingClientRect();
+      const [ cssX, cssY ] = [ clientX - left, clientY - top ];
+      const [ halfWidth, halfHeight ] = [ width / 2, height / 2 ];
+      const [ xBaseCenter, yBaseCenter ] = [ cssX - halfWidth, cssY - halfHeight ];
+      const yBaseCenterTop = -yBaseCenter
+      // 解决坐标基底差异
+      const [ x, y ] = [ xBaseCenter / halfWidth, yBaseCenterTop / halfHeight ];
+
+      const s = Math.random() * 5 + 2;
+      const a = 1;
+      const obj = { x, y, s, a };
+      stars.push(obj);
+
+      // 建立轨道对象
+      const track = new Track(obj);
+      track.start = new Date();
+      track.timeLen = 2000;
+      track.loop = true;
+      track.keyMap = new Map([
+        [
+          "a",
+          [
+            [500, a],
+            [1000, 0],
+            [1500, a],
+          ],
+        ],
+      ]);
+      compose.add(track);
+    });
+
+    !(function ani() {
+      compose.update(new Date());
+      render();
+      // 告诉浏览器——你希望执行一个动画，并且要求浏览器在下次重绘之前调用指定的回调函数更新动画。
+      // 该方法需要传入一个回调函数作为参数，该回调函数会在浏览器下一次重绘之前执行。
+      requestAnimationFrame(ani);
+    })();
+
+    function render() {
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      stars.forEach(({ x, y, s, a }) => {
+        gl.vertexAttrib2f(a_Position, x, y);
+        gl.vertexAttrib1f(a_PointSize, s);
+        const arr = new Float32Array([0.87, 0.91, 1, a]);
+        gl.uniform4fv(u_FragColor, arr);
+        gl.drawArrays(gl.POINTS, 0, 1);
+      });
+    }
+  </script>
+</body>
+</html>

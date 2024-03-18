@@ -27,14 +27,20 @@
       gl_PointSize = a_PointSize;
     }
   </script>
+  <!-- type 定义MIMIE类型 -->
   <script id="fragmentShader" type="x-shader/x-fragment">
+    <!-- 为了确保在不同的硬件上能够保持一致的渲染结果 -->
     precision mediump float;
     uniform vec4 u_FragColor;
+    <!-- 入口函数 -->
     void main () {
+      <!-- gl_PointCoord 内建变量，表示当前片元相对当前绘制的点的坐标位置 -->
       float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
+      <!-- 当距离小于0.5意味着当前像素位于以中心点为圆心、半径为0.5的圆内部 -->
       if (dist < 0.5) {
         gl_FragColor = u_FragColor;
       } else {
+        <!-- 丢弃当前像素 -->
         discard;
       }
     }

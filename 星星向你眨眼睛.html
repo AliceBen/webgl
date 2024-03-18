@@ -36,6 +36,7 @@
     void main () {
       <!-- gl_PointCoord 内建变量，表示当前片元相对当前绘制的点的坐标位置 -->
       float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
+      <!-- 一个类似于在正方形内绘制圆形的效果 -->
       <!-- 当距离小于0.5意味着当前像素位于以中心点为圆心、半径为0.5的圆内部 -->
       if (dist < 0.5) {
         gl_FragColor = u_FragColor;
